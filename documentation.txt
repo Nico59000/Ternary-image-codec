@@ -1,0 +1,309 @@
+Ternary Image Codec v6 — Documentation
+Version : v6
+Format pivot : mot de 27 trits (9 symboles GF(27))
+Langage : C/C++ (header unique)
+________________________________________
+0) Vue d’ensemble
+
+    Codec image ternaire à mots de 27 trits (9×GF(27)), avec profils Reed–Solomon RS(26,k), 
+    CRC-12 ternaire sur l’en-tête, entrelacement 2D boustrophédon, UEP (protection inégale par bande), 
+    balise clairsemée (beacon), pilote de coset (métadonnées seulement), 
+    mode RAW, et sous-trames encapsulées (S27/S24/S21/S18/S15) avec centrage dans un canevas 8K.
+
+    Objectifs clés
+
+    •	Conserver RAW 27 trits comme format pivot IA/NN ternaire.
+    
+    •	Offrir des profils ECC gradués (P1..P4, P5=2D) et UEP par bande (9 bandes).
+    
+    •	Permettre le downscale encapsulé via sous-trames S24/S21/S18/S15 tout en gardant le conteneur 27 trits.
+    
+    •	Protéger l’en-tête par un CRC‑12 ternaire ; protéger le payload par RS(26,k).
+    
+    •	Éviter toute « parité locale » dans les trits libres ; utiliser uniquement des tags ou micro-CRC.
+
+________________________________________
+
+1) Types & constantes (SECTION 1)
+        
+    •	UTrit ∈ {0,1,2} : trit de transport.
+
+    •	BTrit ∈ {−1,0,+1} : trit équilibré (mémoire).
+
+    •	GF27 ∈ {0..26} : symbole de GF(3³).
+
+    •	TRITS_PER_WORD=27, SYM_PER_WORD=9 (3 trits/symbole).
+
+    •	pack3_utrits_to_gf27 / unpack_gf27_to3_utrits : encodage base-3 little-endian.
+                                    
+________________________________________
+
+2) Profils, UEP, entrelacement, scrambler, beacon, coset (SECTION 2)
+
+    2.1 Profils RS(26,k)
+        Profil	        k	r=26−k	t=r/2	Commentaire
+        P1_RS26_24	    24	    2       1   Protection légère
+        P2_RS26_22	    22	    4	    2	Par défaut
+        P3_RS26_20	    20	    6	    3	Robuste
+        P4_RS26_18	    18	    8	    4	Très robuste
+        P5_RS26_22_2D	22	    4	    2	P2 + entrelacement 2D
+        
+        L’entête lui-même est transporté en deux blocs RS(26,18) dédiés (convention v6).
+        
+    2.2 UEP (Unequal Error Protection)
+                          
+        •	9 bandes (une par position de symbole dans le mot).
+
+        •	UEPLayout.band_profile[b] ∈ {0..3} → P1..P4 par bande.
+
+        •	Helpers : uep_uniform() (profil constant), uep_luma_priority().
+                      
+    2.3 Entrelacement 2D (boustrophédon)
+        
+        •	Tile2D {w,h} active seulement quand profil = P5.
+
+        •	interleave2D_boustrophedon() et deinterleave2D_boustrophedon() sont bijectifs.
+    
+    2.4 Scrambler (additif mod-3)
+        
+        •	Seed :
+        {
+            a,b,s0
+            } ;
+        
+        état st ← (a•st + b) mod 3 ; offset ajouté par trit d’un symbole.
+
+    2.5 Beacon clairsemée
+    
+        •	words_period (période en mots), band_slot (0..8), enabled.
+        
+        •	Payload compact : (profile, frame_seq_mod, health_flags) mappé sur 1 symbole.
+    
+    2.6 Coset pilot
+        
+        •	CosetID ∈ {C0,C1,C2} — métadonnées uniquement (aucune parité locale).
+________________________________________
+
+3) En-tête de super-trame & CRC-12 ternaire (SECTION 3)
+
+    3.1 Sous‑trames & résolutions standard
+
+        •	SubwordMode ∈ {S27, S24, S21, S18, S15}.
+
+        •	Mapping indicative :
+            S27=8K (7680×4320), S24=4K (3840×2160), S21=1080p (1920×1080), S18=720p (1280×720), S15≈480p (854×480).
+
+        •	centered=true ⇒ image centrée dans le canevas 8K RAW.
+
+    3.2 Structure
+
+        •	Champs :
+
+            magic, version, profile, uep[9], tile{w,h}, seed{a,b,s0}, band_map_hash, frame_seq, beacon, subword, centered, coset, crc3m.
+
+        •	Placement (symboles d’indices 0..26) : le CRC occupe [20],[21],[22],[26].
+
+        •	Pack/Unpack :
+
+            mapping déterministe docstringé dans le header.
+
+    3.3 CRC-12 ternaire
+
+        •	Polynôme :
+
+            g(x)=x¹² + x⁷ + x⁴ + x³ + 1.
+    
+        •	Implémentation LFSR mod-3.
+    
+        •	Calcul sur tous les symboles de l’en-tête hors slots [20,21,22,26].
+
+    3.4 Codage subword + centrage
+
+        •	Slot [12] encode (subword, centered) via une valeur base‑27 compacte.
+________________________________________
+
+4) GF(27) & RS(26,k) (SECTION 4)
+
+    4.1 GF(27)
+        •	Représentation polynomiale mod p(x)=x³+2x+1.
+
+        •	Add/Sous :
+            digit-wise mod-3 ;
+
+        •	Mult :
+            produit polynômial + réduction (ex. x³≡x+2, etc.).
+            
+    4.2 Tables & contexte
+        •	Recherche d’un élément primitif (ordre 26) ;
+            tables exp/log/mul/inv.
+    4.3 RS(26,k)
+        •	Encodeur systématique par division par g(x)=∏(x−αⁱ).
+
+        •	Décodeur :
+            syndromes, Berlekamp–Massey (polynôme d’erreur σ), Chien (racines), Forney (amplitudes).
+
+         •	Dérivée formelle adaptée à la caractéristique 3 (implémentée dans le header).
+
+________________________________________
+
+5) Mots 27 trits & RAW packing (SECTION 5)
+        
+        •	Word27 : 9 symboles GF(27).
+
+        •	Exemple fourni : 2 pixels (YCbCr quantifiés) ↔ 1 mot 27 trits.
+
+        •	Helpers :
+            encode_raw_pixels_to_words() / decode_raw_words_to_pixels().
+            Cet exemple peut être remplacé, tant que le format « 27 trits/mot » reste identique.
+
+________________________________________
+
+6) Entrelacement 2D (SECTION 6)
+        
+        •	Boustrophédon :
+            permutation zigzag par tuiles Tile2D{w,h}.
+
+        •	interleave2D_boustrophedon() et deinterleave2D_boustrophedon() sont inverses exacts.
+
+________________________________________
+
+7) Sous-trames & centrage (SECTION 7)
+
+    7.1 Encapsulation
+        •	Par mot de 27 trits, seuls les N premiers trits (N∈{27,24,21,18,15}) sont utiles.
+
+        •	Les (27−N) trits restants peuvent embarquer tags, micro-CRC, ID format, etc.
+
+        •	Interdit :
+            toute « parité locale ».
+
+    7.2 Extraction/Injection (helpers)
+        •	extract_subword_trits_from_word() / inject_subword_trits_into_word()
+
+        •	extract_subword_stream_from_words() / build_words_from_subword_stream()
+    7.3 Centrage
+
+        •	centered_window() calcule la fenêtre active centrée ;
+
+        •	to_word_space() convertit en unités « mots RAW » (≈2 px/mot horizontalement).
+________________________________________
+
+8) Contextes & API haut-niveau (SECTION 8)
+    
+    8.1 Contextes
+    
+        •	EncoderContext / DecoderContext :
+            initialisent GF(27), RS (P1..P4 + RS‑header), UEP par défaut, etc.
+
+        •	EncoderConfig / DecoderConfigSeen :
+            profil, UEP, seed, beacon, subword, centered, coset.
+    
+    8.2 En-tête : lecture/écriture
+        
+        •	read_and_decode_header_from_words() : récupère/valide l’en‑tête (RS(26,18)+CRC-12).
+
+        •	HeaderCodec::pack/check_crc/unpack : mapping binaire ↔ struct.
+
+    8.3 API : Profilé → RAW
+    
+            bool decode_profile_to_raw(const std::vector<Word27>& in_profile_words,
+                               std::vector<Word27>& out_raw_words,
+                               DecoderContext& dctx);
+            Chaîne : Header RS→CRC → descramble→beacon remove → UEP RS decode → (dé)entrelacement 2D → symbols→trits → RAW words.
+
+    8.4 API :
+            RAW → Profilé
+            bool encode_profile_from_raw(const std::vector<Word27>& in_raw_words,
+                                 std::vector<Word27>& out_profile_words,
+                                 EncoderContext& ectx);
+            Chaîne : RAW trits utiles → symbols → UEP RS encode → scramble → beacon insert → Header RS → pack mots.
+            Mode RAW : si profile==RAW_MODE, les mots passent inchangés.
+________________________________________
+
+    9) Auto-tests (SECTION 9)
+
+        •	selftest_rs_unit() : encode→erreurs≤t→decode, pour P1..P4.
+
+        •	selftest_api_roundtrip(use_p5) : RAW→profilé→RAW et comparaison byte‑exacte (avec/sans P5 2D).
+________________________________________
+
+    10) Encapsulation multi-résolution :
+        
+        recommandations
+        
+        •	Natif (préféré) : pour 4K/1080/720, générer moins de mots (downscale réel) sans encapsulation.
+
+        •	Encapsulation (optionnel) : utiliser S24/S21/S18/S15 quand interop ou canal annexe désiré ;
+            inclure subword et centered dans l’en-tête.
+
+        •	Centrage 8K : garantit que les IA ternaires peuvent focaliser la fenêtre active même en mode RAW.
+
+________________________________________
+
+    11) Sécurité & invariants
+        
+        •	CRC-12 obligatoire sur l’en-tête ;
+            RS protège en-tête & payload.
+
+        •	Aucune parité locale sur trits libres ;
+            seulement tags/micro-CRC.
+
+        •	Boustrophédon = permutation réversible (sans perte).
+
+        •	Coset pilot :
+            métadonnées, pas de mélange avec l’ECC.
+        
+________________________________________
+
+     12) Points d’extension
+     
+        •	BandMap custom (hash annoncé dans l’en‑tête).
+
+        •	Autres packings RAW possibles (autres espaces couleur, depth, etc.).
+
+        •	Stratégies UEP supplémentaires (mouvement, cartes de saillance).
+________________________________________
+
+    13) Exemples d’usage (snippets)
+
+        Encodeur
+
+        EncoderContext e;
+        uep_luma_priority(e.cfg.uep);
+        e.cfg.profile = ProfileID::P2_RS26_22; // ou P5_RS26_22_2D
+        e.cfg.subword = SubwordMode::S24;      // optionnel : encapsulation 4K
+        std::vector<Word27> prof;
+        encode_profile_from_raw(raw_words, prof, e);
+
+        Décodeur
+
+        DecoderContext d;
+        std::vector<Word27> raw;
+        if (decode_profile_to_raw(in_words, raw, d))
+        {
+        // Si sous‑trame encapsulée : extraire N trits utiles
+            if (d.cfg_last_seen.subword != SubwordMode::S27) {
+                std::vector<UTrit> trits;
+                extract_subword_stream_from_words(raw, payload_len_for(d.cfg_last_seen.subword), trits);
+                // … consommer trits
+            }
+        }   
+________________________________________
+
+14) Glossaire rapide
+    
+    •	Trit : chiffre en base 3.
+
+    •	GF(27) : corps fini de 27 éléments (3³).
+
+    •	RS(26,k) : code Reed–Solomon longueur 26, dimension k.
+
+    •	UEP : protection inégale d’erreurs.
+
+    •	Boustrophédon : zigzag ligne par ligne.
+
+    •	Subword : sous-trame (N trits utiles par mot de 27 trits).
+
+________________________________________
+
+15) Licence MIT .
