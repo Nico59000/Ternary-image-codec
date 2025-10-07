@@ -9,3 +9,5 @@ Encodage balanced-ternary 8K :
  - En-tête de super-trame, pilote coset et balise clairsemée
  - Mode RAW
  - Conversion 2 pixels ↔ mot 27 trits
+
+TODO connecteur format de fichier , images , video 
