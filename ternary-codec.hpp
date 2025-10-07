@@ -16,7 +16,7 @@
 //    - Performance optimizations (SIMD, LUT packing) can be added later.
 //    - All math is done in GF(27) with a compact polynomial representation.
 //
-//  License: MIT (adjust as needed)
+//  License: MIT 
 // ============================================================================
 
 #pragma once
