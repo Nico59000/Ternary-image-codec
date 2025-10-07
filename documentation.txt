@@ -299,7 +299,7 @@ ________________________________________
 
     •	RS(26,k) : code Reed–Solomon longueur 26, dimension k.
 
-    •	UEP : protection inégale d’erreurs.
+    •	UEP : protection contre erreurs inégales.
 
     •	Boustrophédon : zigzag ligne par ligne.
 
