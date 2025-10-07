@@ -1,5 +1,5 @@
 # Ternary-image-codec
-Structures & API pour encodage 8K en balanced ternary
+Structures & API pour encodage 8K (preversion qui peut le plus peux le moins) en balanced ternary
 RS(GF(27)) avec entrelacement 9-bandes, option 2D, UEP, super-trame auto-décrite
 Pilote coset + balise clairsemée (sans trit de parité local)
 ternary_codec_full.hpp
