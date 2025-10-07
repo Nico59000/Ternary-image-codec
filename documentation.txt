@@ -12,7 +12,7 @@ ________________________________________
 
     Objectifs clés
 
-    •	Conserver RAW 27 trits comme format pivot IA/NN ternaire.
+    •	Conserver le RAW 27 trits comme format pivot IA/NN ternaire.
     
     •	Offrir des profils ECC gradués (P1..P4, P5=2D) et UEP par bande (9 bandes).
     
@@ -41,6 +41,7 @@ ________________________________________
 2) Profils, UEP, entrelacement, scrambler, beacon, coset (SECTION 2)
 
     2.1 Profils RS(26,k)
+
         Profil	        k	r=26−k	t=r/2	Commentaire
         P1_RS26_24	    24	    2       1   Protection légère
         P2_RS26_22	    22	    4	    2	Par défaut
