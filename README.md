@@ -11,3 +11,5 @@ Encodage balanced-ternary 8K :
  - Conversion 2 pixels ↔ mot 27 trits
 
 TODO connecteur format de fichier , images , video 
+
+version en cuors de progrès hors repos optimisée pour 2 pixels par mots trits unbalanced ternary 27 tris , dans l'idée gestion optimisée pour le noir et blanc
