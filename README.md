@@ -12,4 +12,4 @@ Encodage balanced-ternary 8K :
 
 TODO connecteur format de fichier , images , video 
 
-version en cours de progrès hors repos optimisée pour 2 pixels par mots trits unbalanced ternary 27 trits , dans l'idée gestion optimisée pour le noir et blanc avec tool pack , diags et tests
+version en cours de progrès hors repos optimisée pour 2 pixels par mots trits unbalanced ternary 27 trits , dans l'idée gestion optimisée pour le noir et blanc avec tool pack , diags et tests , protos optimisé et beta de compression de trames
