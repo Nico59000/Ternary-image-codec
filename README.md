@@ -12,5 +12,4 @@ Encodage balanced-ternary 8K :
 
 TODO connecteur format de fichier , images , video 
 
-non fonctionnel ici ou très partiel , mais version en cours de progrès hors repos optimisée pour 1 pixels par mots trits unbalanced ternary 27 trits , dans l'idée gestion optimisée pour le noir et blanc avec tool pack , diags et tests , 
-protos optimisés compilables de natif ternary et beta de compression de trames avec leur propre suite de tests et diags
+non fonctionnel ici ou très partiel , mais version en cours de progrès hors repos optimisée pour 1 pixels par mots trits balanced ternary 13 trits ,reste du Word27 en security et options
