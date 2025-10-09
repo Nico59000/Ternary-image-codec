@@ -9,10 +9,10 @@
 //  • Helpers de trits balanced↔unbalanced (inline).
 //  • Prototypes de packing base-243 (5 trits → 1 octet) et de l’encodeur proto.
 //
-//  GARDE-FOUS
+//  LIMITES
 //  ----------
-//  • Les conversions balanced {-1,0,1} ↔ unbalanced {0,1,2} sont **pures**.
-//  • L’ECC/RS GF(27) vit ailleurs (cœur codec), non exposé ici.
+//  • Les conversions balanced {-1,0,1} ↔ unbalanced {0,1,2} sont strictes et fonctionnelles couche architecture DATA/WORK-WITH-DATA.
+//  • L’ECC/RS GF(27) est géré ailleurs (cœur codec), non exposé ici.
 //
 //  API
 //  ---
