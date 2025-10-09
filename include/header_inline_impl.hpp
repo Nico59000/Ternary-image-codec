@@ -1,7 +1,6 @@
 // ============================================================================
-//  File: include/header_inline_impl.hpp — HeaderCodec {pack,check,unpack}
-//  Bridge inline si la part 1/2 ne définit que les déclarations.
-//  Rappel: balanced exposé; ici on manipule le header en UTrit/GF(27) interne.
+//  File: include/header_inline_impl.hpp â€” HeaderCodec {pack,check,unpack}
+//  Rappel: balanced exposÃ©; ici on manipule le header en UTrit/GF(27) interne.
 // ============================================================================
 #pragma once
 #include "ternary_image_codec_v6_min.hpp"
